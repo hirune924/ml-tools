@@ -20,7 +20,7 @@ except ImportError:
     _SWEETVIZ_AVAILABLE = False
 
 
-@hydra.main(config_path="../config/config.yaml", strict=False)
+@hydra.main(config_path="../config/eda.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
     print(cfg.pretty())
 
@@ -38,9 +38,9 @@ def main(cfg: DictConfig) -> None:
         # for single df
         my_report = sv.analyze(df, target_feat=None, feat_cfg=None, pairwise_analysis='auto')
         # for multi df
-        #my_report = sv.compare([train_df, "Training Data"], [test_df, "Test Data"], target_feat="Survived")
+        # my_report = sv.compare([train_df, "Training Data"], [test_df, "Test Data"], target_feat="Survived")
         # for single df intra
-        #my_report = sv.compare_intra(my_dataframe, my_dataframe["Sex"] == "male", ["Male", "Female"], feature_config)
+        # my_report = sv.compare_intra(my_dataframe, my_dataframe["Sex"] == "male", ["Male", "Female"], feature_config)
 
         my_report.show_html("sweetvis-report.html")
 
