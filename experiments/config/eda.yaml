@@ -1,4 +1,0 @@
-eda:
-  train_csv_path: data/wine.csv
-  pandas_profiling: true
-  sweetviz: true

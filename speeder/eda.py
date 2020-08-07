@@ -20,12 +20,12 @@ except ImportError:
     _SWEETVIZ_AVAILABLE = False
 
 
-@hydra.main(config_path="../config/eda.yaml", strict=False)
+@hydra.main(config_path="../experiments/config/baseline.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
     print(cfg.pretty())
 
     ## Load Data
-    df = pd.read_csv(utils.to_absolute_path(cfg.eda.train_csv_path))
+    df = pd.read_csv(utils.to_absolute_path(cfg.data.train_csv_path))
     print(df.head())
 
     if cfg.eda.pandas_profiling:
