@@ -1,3 +1,4 @@
 data:
   train_csv_path: data/train.csv
   test_csv_path: data/test.csv
+  target_col_name: Survived
