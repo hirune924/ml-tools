@@ -30,5 +30,11 @@ eda:
     pandas_profiling: true
     sweetviz: true
 
-fe: null
+fe:
+  - class: speeder.preprocessing.feature.load_data
+    params: {train_csv: '${data.train_csv_path}', test_csv: '${data.test_csv_path}'}
+  - class: speeder.preprocessing.feature.numeric_interact_2order
+    params: {target_col: '${data.cols_definition.numerical_col}', input_feature: 'features/train_test.ftr'}
+  - class: speeder.preprocessing.feature.label_encoding
+    params: {target_col: '${data.cols_definition.categorical_col}', input_feature: 'features/train_test.ftr'}
 run: null
