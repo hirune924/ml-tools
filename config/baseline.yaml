@@ -37,4 +37,5 @@ fe:
     params: {target_col: '${data.cols_definition.numerical_col}', input_feature: 'features/train_test.ftr'}
   - class: speeder.preprocessing.feature.label_encoding
     params: {target_col: '${data.cols_definition.categorical_col}', input_feature: 'features/train_test.ftr'}
-run: null
+
+trainer: null
