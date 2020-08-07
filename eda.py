@@ -20,7 +20,7 @@ except ImportError:
     _SWEETVIZ_AVAILABLE = False
 
 
-@hydra.main(config_path="../experiments/config/baseline.yaml", strict=False)
+@hydra.main(config_path="config/baseline.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
     print(cfg.pretty())
 

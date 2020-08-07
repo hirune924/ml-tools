@@ -1,0 +1,34 @@
+hydra:
+    run:
+        dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    sweep:
+        dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+        subdir: ${hydra.job.num}
+
+exp_name: 'baseline'
+data:
+    train_csv_path: input/train.csv
+    test_csv_path: input/test.csv
+    cols_definition:
+        id_col: 'PassengerId'
+        target_col: 'Survived'
+        numerical_col: [
+          'Pclass',
+          'Age',
+          'SibSp',
+          'Parch',
+          'Fare'
+        ]
+        categorical_col: [
+          'Sex',
+        ]
+        other_col: [
+          'Name',
+          'Ticket'
+        ]
+eda:
+    pandas_profiling: true
+    sweetviz: true
+
+fe: null
+run: null
