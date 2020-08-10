@@ -1,10 +1,19 @@
 import os
 import pandas as pd
 
+import time
+from contextlib import contextmanager
 import pyarrow
 import functools
 import warnings
 from tqdm import tqdm
+
+@contextmanager
+def timer(name):
+    t0 = time.time()
+    print(f'[{name}] start')
+    yield
+    print(f'[{name}] done in {time.time() - t0:.0f} s')
 
 def save_feature(train_df=None, test_df=None, save_dir=None, feature_name=None):
     feature_path = os.path.join(save_dir, feature_name)
@@ -57,17 +66,20 @@ def cached_feature(feature_name, directory, ignore_columns = None):
     def _decorator(fun):
         @functools.wraps(fun)
         def _decorated_fun(*args, **kwargs):
-            options = '_' + '_'.join([i + '=' + str(kwargs[i]) for i in kwargs if i != 'test'])
-            f_name = feature_name + options
-            try:
-                if not kwargs['test']:
-                    return load_feature(f_name + '_train.ftr', directory, ignore_columns), None
-                else:
-                    return load_feature(f_name + '_train.ftr', directory, ignore_columns), load_feature(f_name + '_test.ftr', directory, ignore_columns)
-            except (pyarrow.ArrowIOError, IOError):
-                train_df, test_df = fun(*args, **kwargs)
-                save_feature(train_df, test_df, directory, f_name)
-                return train_df, test_df
+            with timer(feature_name):
+                options = '_'.join([i + '=' + str(kwargs[i]) for i in kwargs if i != 'test'])
+                options = '_' + options if options != '' else options
+                f_name = feature_name + options
+                try:
+                    test = True if 'test' not in kwargs else kwargs['test']
+                    if not test:
+                        return load_feature(f_name + '_train.ftr', directory, ignore_columns), None
+                    else:
+                        return load_feature(f_name + '_train.ftr', directory, ignore_columns), load_feature(f_name + '_test.ftr', directory, ignore_columns)
+                except (pyarrow.ArrowIOError, IOError):
+                    train_df, test_df = fun(*args, **kwargs)
+                    save_feature(train_df, test_df, directory, f_name)
+                    return train_df, test_df
 
         return _decorated_fun
 
