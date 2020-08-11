@@ -1,14 +1,14 @@
 from sklearn.metrics import log_loss, mean_absolute_error, roc_auc_score, mean_squared_error, average_precision_score
 
 class Trainer:
-    def __init__(self, configs: dict, cv):
-        self.run_name = configs['exp_name']
-        self.data = configs.data
-        self.coldef = self.data.cols_definition
-        self.fe = configs.fe
+    def __init__(self, model, cv):
+        self.model = model
         self.cv = cv
 
-        def run_train_cv(self) -> None:
+    def train(self, train_df, test_df):
+        self.model.fit(train_df)
+
+    def run_train_cv(self) -> None:
         """
         クロスバリデーションでの学習・評価を行う
         学習・評価とともに、各foldのモデルの保存、スコアのログ出力についても行う
