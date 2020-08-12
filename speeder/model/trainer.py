@@ -64,45 +64,10 @@ class Trainer:
         X_train = self.X_train
         y_train = self.y_train
 
-        # 残差の設定
-        if self.advanced and 'ResRunner' in self.advanced:
-            oof = Data.load(self.advanced['ResRunner']['oof'])
-            X_train['res'] = (y_train - oof).abs()
-
         # 学習データ・バリデーションデータをセットする
         tr_idx, va_idx = self.load_index_fold(i_fold)
         X_tr, y_tr = X_train.iloc[tr_idx], y_train.iloc[tr_idx]
         X_val, y_val = X_train.iloc[va_idx], y_train.iloc[va_idx]
-
-        # 残差でダウンサンプリング
-        if self.advanced and 'ResRunner' in self.advanced:
-            X_tr = X_tr.loc[(X_tr['res'] < self.advanced['ResRunner']['res_threshold']).values]
-            y_tr = y_tr.loc[(X_tr['res'] < self.advanced['ResRunner']['res_threshold']).values]
-            print(X_tr.shape)
-            X_tr.drop('res', axis=1, inplace=True)
-            X_val.drop('res', axis=1, inplace=True)
-
-        # Pseudo Lebeling
-        if self.advanced and 'PseudoRunner' in self.advanced:
-            y_test_pred = Data.load(self.advanced['PseudoRunner']['y_test_pred'])
-            if 'pl_threshold' in self.advanced['PseudoRunner']:
-                X_add = self.X_test.loc[
-                    (y_test_pred < self.advanced['PseudoRunner']['pl_threshold']) | (y_test_pred > 1 - self.advanced['PseudoRunner']['pl_threshold'])]
-                y_add = pd.DataFrame(y_test_pred).loc[
-                    (y_test_pred < self.advanced['PseudoRunner']['pl_threshold']) | (y_test_pred > 1 - self.advanced['PseudoRunner']['pl_threshold'])]
-                y_add = pd.DataFrame(([1 if ya > 0.5 else 0 for ya in y_add[0]]))
-            elif 'pl_threshold_neg' in self.advanced['PseudoRunner']:
-                X_add = self.X_test.loc[
-                    (y_test_pred < self.advanced['PseudoRunner']['pl_threshold_neg']) | (y_test_pred > self.advanced['PseudoRunner']['pl_threshold_pos'])]
-                y_add = pd.DataFrame(y_test_pred).loc[
-                    (y_test_pred < self.advanced['PseudoRunner']['pl_threshold_neg']) | (y_test_pred > self.advanced['PseudoRunner']['pl_threshold_pos'])]
-                y_add = pd.DataFrame(([1 if ya > 0.5 else 0 for ya in y_add[0]]))
-            else:
-                X_add = self.X_test
-                y_add = pd.DataFrame(y_test_pred)
-            print(f'added X_test: {len(X_add)}')
-            X_tr = pd.concat([X_tr, X_add])
-            y_tr = pd.concat([y_tr, y_add])
 
         # 学習を行う
         model = self.build_model(i_fold)
@@ -277,10 +242,7 @@ class Trainer:
         """
         # 学習データ・バリデーションデータを分けるインデックスを返す
         # ここでは乱数を固定して毎回作成しているが、ファイルに保存する方法もある
-        if 'cv_y' in self.cols_definition:
-            return list(self.cv.split(self.X_train, self.X_train[self.cols_definition['cv_y']]))[i_fold]
-        else:
-            return list(self.cv.split(self.X_train, self.y_train))[i_fold]
+        return list(self.cv.split(self.X_train, self.y_train))[i_fold]
 
     def submission(self):
         #pred = Data.load(f'../output/pred/{self.run_name}-test.pkl')
