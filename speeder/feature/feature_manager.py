@@ -57,7 +57,7 @@ def load_features(feature_names, dir = None, ignore_columns = None):
 
     concatenated = dfs[0]
     for idx, df in enumerate(dfs[1:]):
-        concat_df(concatenated, df, duplicate_suffix=feature_names[idx + 1].rstrip('_train.ftr').rstrip('_test.ftr'))
+        concatenated = concat_df(concatenated, df, duplicate_suffix=feature_names[idx + 1].rstrip('_train.ftr').rstrip('_test.ftr'))
 
     return concatenated
 

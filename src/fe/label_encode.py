@@ -9,19 +9,21 @@ from load_data import load_data
 cols_definition = {
     'target': ['Survived'],
     'numerical': ['Age', 'SibSp', 'Parch', 'Fare'],
-    'categorical': ['Pclass', 'Sex'],
+    'categorical': ['Pclass', 'Sex', 'Cabin', 'Embarked'],
     'ignore': ['PassengerId', 'Name', 'Ticket']
 }
 
 def label_encoding(train, test, target_cols):
     n_train = len(train)
     train = pd.concat([train, test], sort=False).reset_index(drop=True)
+    org_cols = train.columns
     for f in cols_definition[target_cols]:
         try:
             lbl = preprocessing.LabelEncoder()
-            train[f] = lbl.fit_transform(list(train[f].values))
+            train[f + '_label_encode'] = lbl.fit_transform(list(train[f].fillna('NaN').values))
         except:
             print(f)
+    train = train.drop(org_cols, axis=1)
     test = train[n_train:].reset_index(drop=True)
     train = train[:n_train]
     return train, test

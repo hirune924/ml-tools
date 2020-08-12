@@ -5,37 +5,23 @@ hydra:
         dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
         subdir: ${hydra.job.num}
 
-exp_name: 'baseline'
-data:
-    train_csv_path: input/train.csv
-    test_csv_path: input/test.csv
-    cols_definition:
-        id_col: 'PassengerId'
-        target_col: 'Survived'
-        numerical_col: [
-          'Pclass',
-          'Age',
-          'SibSp',
-          'Parch',
-          'Fare'
-        ]
-        categorical_col: [
-          'Sex',
-        ]
-        other_col: [
-          'Name',
-          'Ticket'
-        ]
-eda:
-    pandas_profiling: true
-    sweetviz: true
-
-fe:
-  - class: speeder.preprocessing.feature.load_data
-    params: {train_csv: '${data.train_csv_path}', test_csv: '${data.test_csv_path}'}
-  - class: speeder.preprocessing.feature.numeric_interact_2order
-    params: {target_col: '${data.cols_definition.numerical_col}', input_feature: 'features/train_test.ftr'}
-  - class: speeder.preprocessing.feature.label_encoding
-    params: {target_col: '${data.cols_definition.categorical_col}', input_feature: 'features/train_test.ftr'}
-
-trainer: null
+feature: ['select_cols_target_col=numerical', 'label_encode_target_col=categorical']
+trainer:
+  evaluation_metric: auc
+  model_name: ModelXGB
+  params: {
+            "max_depth": 12,
+            "learning_rate": 0.02,
+            "subsample": 0.8,
+            "colsample_bytree": 0.4,
+            "missing": -1,
+            "eval_metric": "auc",
+            "tree_method": "hist",
+            "num_round": 100,
+            "early_stopping_rounds": 50
+        }
+  cols_definition:
+    target_col: 'Survived'
+    categorical_col: [
+      'Pclass_label_encode',  'Sex_label_encode',  'Cabin_label_encode',  'Embarked_label_encode'
+    ]
