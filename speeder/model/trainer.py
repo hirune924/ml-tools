@@ -16,6 +16,9 @@ from speeder.utils import Data
 #                         ModelRIDGE)
 from speeder.model import ModelXGB
 
+import logging
+logger = logging.getLogger(__name__)
+
 models_map = {
 #    'ModelLGBM': ModelLGBM,
 #    'ModelOptunaLGBM': ModelOptunaLGBM,
@@ -33,7 +36,7 @@ models_map = {
 }
 class Trainer:
 
-    def __init__(self, configs, X_train, y_train, X_test, cv):
+    def __init__(self, configs, X_train, y_train, X_test, cv, experiment=None):
         #self.exp_name = configs['exp_name']
         #self.run_name = configs['run_name']
         #self.run_id = None
@@ -45,6 +48,7 @@ class Trainer:
         self.params = configs.trainer.params
         self.cols_definition = configs.trainer.cols_definition
         self.cv = cv
+        self.experiment = experiment
         #self.sample_submission = configs['data']['sample_submission']
         #self.description = configs['description']
         self.advanced = None #configs['advanced'] if 'advanced' in configs else None
@@ -97,7 +101,7 @@ class Trainer:
         # mlflow
         #mlflow.set_experiment(self.exp_name)
         #mlflow.start_run(run_name=self.run_name)
-        #logger.info(f'{self.run_name} - start training cv')
+        logger.info(f'start training cv')
 
         scores = []
         va_idxes = []
@@ -118,9 +122,9 @@ class Trainer:
         # 各foldで学習を行う
         for i_fold in range(self.cv.n_splits):
             # 学習を行う
-            #logger.info(f'{self.run_name} fold {i_fold} - start training')
+            logger.info(f'fold {i_fold} - start training')
             model, va_idx, va_pred, score = self.train_fold(i_fold)
-            #logger.info(f'{self.run_name} fold {i_fold} - end training - score {score}')
+            logger.info(f'fold {i_fold} - end training - score {score}')
 
             # モデルを保存する
             model.save_model()
@@ -147,11 +151,11 @@ class Trainer:
         elif self.evaluation_metric == 'prauc':
             cv_score = average_precision_score(self.y_train, preds)
 
-        #logger.info(f'{self.run_name} - end training cv - score {cv_score}')
+        logger.info(f'end training cv - score {cv_score}')
 
         # 予測結果の保存
         #Data.dump(preds, f'../output/pred/{self.run_name}-train.pkl')
-        Data.dump(preds, f'../output/pred/train.pkl')
+        Data.dump(preds, f'pred/train_oof.pkl')
 
         # mlflow
         #self.run_id = mlflow.active_run().info.run_id
@@ -198,7 +202,7 @@ class Trainer:
 
         # 予測結果の保存
         #Data.dump(pred_avg, f'../output/pred/{self.run_name}-test.pkl')
-        Data.dump(pred_avg, f'../output/pred/test.pkl')
+        Data.dump(pred_avg, f'pred/test.pkl')
 
 
         #logger.info(f'{self.run_name} - end prediction cv')
@@ -208,7 +212,7 @@ class Trainer:
             aggs = feature_importances.groupby('Feature').mean().sort_values(by="importance", ascending=False)
             cols = aggs[:200].index
             #pd.DataFrame(aggs.index).to_csv(f'../output/importance/{self.run_name}-fi.csv', index=False)
-            pd.DataFrame(aggs.index).to_csv(f'../output/importance/fi.csv', index=False)
+            pd.DataFrame(aggs.index).to_csv(f'importance/fi.csv', index=False)
 
             best_features = feature_importances.loc[feature_importances.Feature.isin(cols)]
             plt.figure(figsize=(14, 26))
@@ -216,7 +220,7 @@ class Trainer:
             plt.title('LightGBM Features (averaged over folds)')
             plt.tight_layout()
             #plt.savefig(f'../output/importance/{self.run_name}-fi.png')
-            plt.savefig(f'../output/importance/fi.png')
+            plt.savefig(f'importance/feature_importance.png')
             plt.show()
 
             # mlflow
@@ -246,14 +250,14 @@ class Trainer:
 
     def submission(self):
         #pred = Data.load(f'../output/pred/{self.run_name}-test.pkl')
-        pred = Data.load(f'../output/pred/test.pkl')
+        pred = Data.load(f'pred/test.pkl')
         #sub = pd.read_csv(self.sample_submission)
         if self.advanced and 'predict_exp' in self.advanced:
             sub[self.cols_definition['target_col']] = np.exp(pred)
         else:
             sub[self.cols_definition['target_col']] = pred
         #sub.to_csv(f'../output/submissions/submission_{self.run_name}.csv', index=False)
-        sub.to_csv(f'../output/submissions/submission.csv', index=False)
+        sub.to_csv(f'submissions/submission.csv', index=False)
 
     #def reset_mlflow(self):
     #    mlflow.end_run()
