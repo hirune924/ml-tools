@@ -154,20 +154,16 @@ class Trainer:
         logger.info(f'end training cv - score {cv_score}')
 
         # 予測結果の保存
-        #Data.dump(preds, f'../output/pred/{self.run_name}-train.pkl')
         Data.dump(preds, f'pred/train_oof.pkl')
 
         # mlflow
-        #self.run_id = mlflow.active_run().info.run_id
-        #log_param('model_name', str(self.model_cls).split('.')[-1][:-2])
-        #log_param('fe_name', self.fe_name)
-        #log_param('train_params', self.params)
-        #log_param('cv_strategy', str(self.cv))
-        #log_param('evaluation_metric', self.evaluation_metric)
+        log_dict = {}
+        log_dict['cv_score'] = cv_score
+        for i in range(len(scores)):
+            log_dict[f'fold_{i}_score'] = scores[i]
+        self.experiment.log_metrics(dic=log_dict)
         #log_metric('cv_score', cv_score)
         #log_param('fold_scores', dict(zip([f'fold_{i}' for i in range(len(scores))], [round(s, 4) for s in scores])))
-        #log_param('cols_definition', self.cols_definition)
-        #log_param('description', self.description)
         #mlflow.end_run()
 
     def run_predict_cv(self) -> None:
