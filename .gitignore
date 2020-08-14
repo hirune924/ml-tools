@@ -1,7 +1,7 @@
 # logging
-outputs/*
-multirun/*
-features/*
+#outputs/*
+#multirun/*
+#features/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
