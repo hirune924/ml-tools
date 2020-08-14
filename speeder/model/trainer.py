@@ -1,4 +1,5 @@
 from typing import Union
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,15 +15,15 @@ from speeder.utils import Data
 #                         ModelNgbClassifier, ModelNgbRegressor,
 #                         ModelTNNClassifier, ModelTNNRegressor, ModelCNNClasifier, ModelRNNClasifier,
 #                         ModelRIDGE)
-from speeder.model import ModelXGB
+from speeder.model import ModelLGBM, ModelOptunaLGBM, ModelFocalLGBM, ModelXGB
 
 import logging
 logger = logging.getLogger(__name__)
 
 models_map = {
-#    'ModelLGBM': ModelLGBM,
-#    'ModelOptunaLGBM': ModelOptunaLGBM,
-#    'ModelFocalLGBM': ModelFocalLGBM,
+    'ModelLGBM': ModelLGBM,
+    'ModelOptunaLGBM': ModelOptunaLGBM,
+    'ModelFocalLGBM': ModelFocalLGBM,
 #    'ModelCatRegressor': ModelCatRegressor,
 #    'ModelCatClassifier': ModelCatClassifier,
     'ModelXGB': ModelXGB,
@@ -208,6 +209,7 @@ class Trainer:
             aggs = feature_importances.groupby('Feature').mean().sort_values(by="importance", ascending=False)
             cols = aggs[:200].index
             #pd.DataFrame(aggs.index).to_csv(f'../output/importance/{self.run_name}-fi.csv', index=False)
+            os.makedirs(os.path.dirname(f'importance/fi.csv'), exist_ok=True)
             pd.DataFrame(aggs.index).to_csv(f'importance/fi.csv', index=False)
 
             best_features = feature_importances.loc[feature_importances.Feature.isin(cols)]
@@ -244,16 +246,12 @@ class Trainer:
         # ここでは乱数を固定して毎回作成しているが、ファイルに保存する方法もある
         return list(self.cv.split(self.X_train, self.y_train))[i_fold]
 
-    def submission(self):
-        #pred = Data.load(f'../output/pred/{self.run_name}-test.pkl')
+    def submission(self, sub_df=None):
         pred = Data.load(f'pred/test.pkl')
-        #sub = pd.read_csv(self.sample_submission)
-        if self.advanced and 'predict_exp' in self.advanced:
-            sub[self.cols_definition['target_col']] = np.exp(pred)
-        else:
-            sub[self.cols_definition['target_col']] = pred
+        sub_df[self.cols_definition['target_col']] = np.where(pred > 0.5, 1, 0)
         #sub.to_csv(f'../output/submissions/submission_{self.run_name}.csv', index=False)
-        sub.to_csv(f'submissions/submission.csv', index=False)
+        os.makedirs(os.path.dirname(f'submissions/submission.csv'), exist_ok=True)
+        sub_df.to_csv(f'submissions/submission.csv', index=False)
 
     #def reset_mlflow(self):
     #    mlflow.end_run()

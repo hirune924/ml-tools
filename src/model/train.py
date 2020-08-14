@@ -20,7 +20,7 @@ from sklearn.model_selection import StratifiedKFold
 from speeder.model.trainer import Trainer
 from speeder.feature.feature_manager import load_features, load_feature   
 from speeder.utils import flatten_dict_cfg
-@hydra.main(config_path="../config/modeling.yaml", strict=False)
+@hydra.main(config_path="../config/modeling_lgbm.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
     print(cfg.pretty())
     experiment_name = '/'.join(os.getcwd().split('/')[-2:])
@@ -35,7 +35,9 @@ def main(cfg: DictConfig) -> None:
     train_df = load_features(feature_names, dir=utils.to_absolute_path('features'), ignore_columns = None)
     feature_names = [f + '_test.ftr' for f in feature_list]
     test_df = load_features(feature_names, dir=utils.to_absolute_path('features'), ignore_columns = None)
+
     target_df = load_feature('_train.ftr', dir=utils.to_absolute_path('features'), ignore_columns = None)[['Survived']]
+    sub_df = load_feature('_test.ftr', dir=utils.to_absolute_path('features'), ignore_columns = None)[['PassengerId']]
 
     #print(train_df.head())
     #print(test_df.head())
@@ -43,6 +45,8 @@ def main(cfg: DictConfig) -> None:
 
     trainer = Trainer(configs=cfg, X_train=train_df, y_train=target_df, X_test=test_df, cv=cv, experiment=experiment)
     trainer.run_train_cv()
+    trainer.run_predict_cv()
+    trainer.submission(sub_df)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,32 @@
+hydra:
+    run:
+        dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    sweep:
+        dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+        subdir: ${hydra.job.num}
+
+feature: ['select_cols_target_col=numerical', 'label_encode_target_col=categorical']
+trainer:
+  evaluation_metric: auc
+  model_name: ModelOptunaLGBM
+  params:  {
+            'num_leaves': 333,
+            'min_child_weight': 0.03454472573214212,
+            'feature_fraction': 0.3797454081646243,
+            'bagging_fraction': 0.4181193142567742,
+            'min_data_in_leaf': 106,
+            'objective': 'binary',
+            'max_depth': -1,
+            'learning_rate': 0.006883242363721497,
+            "boosting_type": "gbdt",
+            "metric": 'auc',
+            'reg_alpha': 0.3899927210061127,
+            'reg_lambda': 0.6485237330340494,
+            'num_boost_round': 20,
+            'early_stopping_rounds': 5
+        }
+  cols_definition:
+    target_col: 'Survived'
+    categorical_col: [
+      'Pclass_label_encode',  'Sex_label_encode',  'Cabin_label_encode',  'Embarked_label_encode'
+    ]

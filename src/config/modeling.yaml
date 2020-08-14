@@ -10,6 +10,7 @@ trainer:
   evaluation_metric: auc
   model_name: ModelXGB
   params: {
+            'objective': "binary:logistic",
             "max_depth": 12,
             "learning_rate": 0.02,
             "subsample": 0.8,
