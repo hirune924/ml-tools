@@ -6,9 +6,8 @@ hydra:
         subdir: ${hydra.job.num}
 
 feature: ['select_cols_target_col=numerical', 'label_encode_target_col=categorical']
-trainer:
+model:
   evaluation_metric: auc
-  model_name: ModelXGB
   params: {
             'objective': "binary:logistic",
             "max_depth": 12,
@@ -17,10 +16,10 @@ trainer:
             "colsample_bytree": 0.4,
             "missing": -1,
             "eval_metric": "auc",
-            "tree_method": "hist",
-            "num_round": 10,
-            "early_stopping_rounds": 5
-        }
+            "tree_method": "hist"
+          }
+  num_boost_round: 20
+  early_stopping_rounds: 5
   cols_definition:
     target_col: 'Survived'
     categorical_col: [
