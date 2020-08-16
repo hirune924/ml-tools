@@ -24,6 +24,7 @@ import xgboost as xgb
 
 from sklearn.metrics import log_loss, mean_absolute_error, roc_auc_score, mean_squared_error, average_precision_score, accuracy_score
 
+import seaborn as sns
 
 @hydra.main(config_path="../config/modeling_xgb.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
@@ -86,11 +87,35 @@ def main(cfg: DictConfig) -> None:
         log_dict[f'fold_{i}_score'] = val_scores[i]
     experiment.log_metrics(dic=log_dict)
 
+    # Predict for test
+    dtest = xgb.DMatrix(test_df)
+    preds = []
+    feature_importances = pd.DataFrame()
+    for fold in range(len(val_scores)):
+        # For predict
+        model_path = os.path.join('model', f'xgboost_fold{fold}.model')
+        model = Data.load(model_path)
+        pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
+        preds.append(pred)
+        # For Feature importance
+        fold_importance_df = pd.DataFrame.from_dict(model.get_score(importance_type='gain'), orient='index', columns=['importance'])
+        feature_importances = pd.concat([feature_importances, fold_importance_df], axis=1, join='outer')
 
-    #trainer = Trainer(configs=cfg, X_train=train_df, y_train=target_df, X_test=test_df, cv=cv, experiment=experiment)
-    #trainer.run_train_cv()
-    #trainer.run_predict_cv()
-    #trainer.submission(sub_df)
+    # save result of test predict
+    pred_avg = np.mean(preds, axis=0)
+    Data.dump(pred_avg, f'pred/test.pkl')
+
+    # save result of feature importance
+    fi_avg = feature_importances.mean(axis='columns').sort_values(ascending=False)
+    sort_index = fi_avg.index
+    os.makedirs(os.path.dirname(f'importance/feature_importance.csv'), exist_ok=True)
+    feature_importances.reindex(index=sort_index).to_csv(f'importance/feature_importance.csv')
+    experiment.log_metrics(dic=fi_avg.to_dict())
+
+    # For Submission
+    sub_df['Survived'] = pred_avg
+    os.makedirs(os.path.dirname(f'submission/xgb_submission.csv'), exist_ok=True)
+    sub_df.to_csv(f'submission/xgb_submission.csv')
 
 if __name__ == "__main__":
     main()
