@@ -6,25 +6,29 @@ hydra:
         subdir: ${hydra.job.num}
 
 feature: ['select_cols_target_col=numerical', 'label_encode_target_col=categorical']
-trainer:
-  evaluation_metric: auc
-  model_name: ModelOptunaLGBM
-  params:  {
-            'num_leaves': 333,
-            'min_child_weight': 0.03454472573214212,
-            'feature_fraction': 0.3797454081646243,
-            'bagging_fraction': 0.4181193142567742,
-            'min_data_in_leaf': 106,
-            'objective': 'binary',
-            'max_depth': -1,
-            'learning_rate': 0.006883242363721497,
-            "boosting_type": "gbdt",
-            "metric": 'auc',
-            'reg_alpha': 0.3899927210061127,
-            'reg_lambda': 0.6485237330340494,
-            'num_boost_round': 20,
-            'early_stopping_rounds': 5
-        }
+model:
+  params:  {boosting_type: gbdt,
+            class_weight: null,
+            colsample_bytree: 1.0,
+            importance_type: split,
+            learning_rate: 0.1,
+            max_depth: -1,
+            min_child_samples: 20,
+            min_child_weight: 0.001,
+            min_split_gain: 0.0,
+            n_estimators: 100,
+            n_jobs: -1,
+            num_leaves: 31,
+            objective: binary,
+            random_state: null,
+            reg_alpha: 0.0,
+            reg_lambda: 0.0,
+            silent: true,
+            subsample: 1.0,
+            subsample_for_bin: 200000,
+            subsample_freq: 0}
+  num_round: 20
+  early_stopping_rounds: 5
   cols_definition:
     target_col: 'Survived'
     categorical_col: [

@@ -20,12 +20,12 @@ from sklearn.model_selection import StratifiedKFold
 from speeder.feature.feature_manager import load_features, load_feature   
 from speeder.utils import flatten_dict_cfg, Data
 
-import xgboost as xgb
+import lightgbm as lgbm
 
 from sklearn.metrics import log_loss, mean_absolute_error, roc_auc_score, mean_squared_error, average_precision_score, accuracy_score
 
 
-@hydra.main(config_path="../config/modeling_xgb.yaml", strict=False)
+@hydra.main(config_path="../config/modeling_lgbm.yaml", strict=False)
 def main(cfg: DictConfig) -> None:
     print(cfg.pretty())
     # For comet_ml
@@ -51,21 +51,18 @@ def main(cfg: DictConfig) -> None:
     val_idxes = []
     val_preds = []
     for fold, (train_index, valid_index) in enumerate(cv.split(train_df, target_df)):
-        dtrain = xgb.DMatrix(train_df.iloc[train_index], label=target_df.iloc[train_index])
-        dvalid = xgb.DMatrix(train_df.iloc[valid_index], label=target_df.iloc[valid_index])
+        dtrain = lgbm.Dataset(train_df.iloc[train_index], target_df.iloc[train_index], categorical_feature=cfg.model.cols_definition.categorical_col)
+        dvalid = lgbm.Dataset(train_df.iloc[valid_index], target_df.iloc[valid_index], reference=dtrain, categorical_feature=cfg.model.cols_definition.categorical_col)
         params = cfg.model.params
-        watchlist = [(dtrain, 'train'), (dvalid, 'eval')]
         # train
-        model = xgb.train(params=dict(params), dtrain=dtrain, num_boost_round=cfg.model.num_boost_round, evals=watchlist,
-                            obj=None, feval=None, maximize=False, early_stopping_rounds=cfg.model.early_stopping_rounds,
-                            evals_result=None, verbose_eval=True, xgb_model=None, callbacks=None)
+        model = lgbm.train(dict(params), dtrain, cfg.model.num_round, valid_sets=[dtrain, dvalid],
+                            verbose_eval=500, early_stopping_rounds=cfg.model.early_stopping_rounds)
         # predict for validation
-        val_pred = model.predict(dvalid, ntree_limit=model.best_ntree_limit)
+        val_pred = model.predict(train_df.iloc[valid_index], num_iteration=model.best_iteration)
         # calc metric
         val_score = accuracy_score(target_df.iloc[valid_index], np.where(val_pred>0.5, 1, 0))
         # save model
-        model_path = os.path.join('model', f'xgboost_fold{fold}.model')
-        # best_ntree_limitが消えるのを防ぐため、pickleで保存することとした
+        model_path = os.path.join('model', f'lgbm_fold{fold}.model')
         Data.dump(model, model_path)
         # save logs
         val_idxes.append(valid_index)
@@ -87,17 +84,16 @@ def main(cfg: DictConfig) -> None:
     experiment.log_metrics(dic=log_dict)
 
     # Predict for test
-    dtest = xgb.DMatrix(test_df)
     preds = []
     feature_importances = pd.DataFrame()
     for fold in range(len(val_scores)):
         # For predict
-        model_path = os.path.join('model', f'xgboost_fold{fold}.model')
+        model_path = os.path.join('model', f'lgbm_fold{fold}.model')
         model = Data.load(model_path)
-        pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
+        pred = model.predict(test_df, num_iteration=model.best_iteration)
         preds.append(pred)
         # For Feature importance
-        fold_importance_df = pd.DataFrame.from_dict(model.get_score(importance_type='gain'), orient='index', columns=['importance'])
+        fold_importance_df = pd.DataFrame(model.feature_importance(importance_type='gain'), index=test_df.columns.values)
         feature_importances = pd.concat([feature_importances, fold_importance_df], axis=1, join='outer')
 
     # save result of test predict
@@ -113,8 +109,8 @@ def main(cfg: DictConfig) -> None:
 
     # For Submission
     sub_df['Survived'] = pred_avg
-    os.makedirs(os.path.dirname(f'submission/xgb_submission.csv'), exist_ok=True)
-    sub_df.to_csv(f'submission/xgb_submission.csv')
+    os.makedirs(os.path.dirname(f'submission/lgbm_submission.csv'), exist_ok=True)
+    sub_df.to_csv(f'submission/lgbm_submission.csv')
 
 if __name__ == "__main__":
     main()
